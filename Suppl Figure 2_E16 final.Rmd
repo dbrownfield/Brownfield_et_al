@@ -1,0 +1,100 @@
+---
+title: "Brownfield et al - Supplemental Figure 2, E16 scRNAseq plots"
+output: html_notebook
+---
+
+```{r}
+library(Seurat)
+library(dplyr)
+library(Matrix)
+library(gplots)
+library(useful)
+
+# Folder and object
+setwd("C:/Users/Brownfielder/Documents/R/_Ido_timecourse/Raw/file/");
+ido.dir <- "C:/Users/Brownfielder/Documents/R/_Ido_timecourse/Raw/file/";
+
+ido.data <- read.table("C:/Users/Brownfielder/Documents/R/_Ido_timecourse/Raw/file/E16/AB1183.txt",sep="\t",header=TRUE,row.names=1);
+tiss <- CreateSeuratObject(ido.data, min.cells = 3, project = "AB1183-E16.5")
+
+ido.data <- read.table("C:/Users/Brownfielder/Documents/R/_Ido_timecourse/Raw/file/E16/AB1410.txt",sep="\t",header=TRUE,row.names=1);
+tiss.b <- CreateSeuratObject(ido.data, min.cells = 3, project = "AB1410-E16.5")
+
+ido.data <- read.table("C:/Users/Brownfielder/Documents/R/_Ido_timecourse/Raw/file/E16/AB1486.txt",sep="\t",header=TRUE,row.names=1);
+tiss.c <- CreateSeuratObject(ido.data, min.cells = 3, project = "AB1486-E16.5")
+
+ido.data <- read.table("C:/Users/Brownfielder/Documents/R/_Ido_timecourse/Raw/file/E16/AB1487.txt",sep="\t",header=TRUE,row.names=1);
+tiss.d <- CreateSeuratObject(ido.data, min.cells = 3, project = "AB1487-E16.5")
+
+ido.data <- read.table("C:/Users/Brownfielder/Documents/R/_Ido_timecourse/Raw/file/E16/AB1538.txt",sep="\t",header=TRUE,row.names=1);
+tiss.e <- CreateSeuratObject(ido.data, min.cells = 3, project = "AB1538-E16.5")
+
+ido.data <- read.table("C:/Users/Brownfielder/Documents/R/_Ido_timecourse/Raw/file/E16/AB1535.txt",sep="\t",header=TRUE,row.names=1);
+tiss.f <- CreateSeuratObject(ido.data, min.cells = 3, project = "AB1535-E16.5")
+
+tiss <- merge(x = tiss, y = c(tiss.b, tiss.c, tiss.d, tiss.e, tiss.f), add.cell.ids = c("AB1183-E16.5","AB1410-E16.5","AB1486-E16.5", "AB1487-E16.5", "AB1538-E16.5", "AB1535-E16.5"))
+
+```
+
+Calculate percent ribosomal genes.
+
+```{r}
+tiss[["percent.mt"]] <- PercentageFeatureSet(tiss, pattern = "^mt-")
+# Visualize QC metrics as a violin plot
+VlnPlot(tiss, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+```
+
+```{r}
+plot1 <- FeatureScatter(tiss, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(tiss, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+CombinePlots(plots = list(plot1, plot2))
+```
+
+```{r}
+tiss <- subset(tiss, subset = nFeature_RNA > 650 & nFeature_RNA < 3500 & percent.mt < 5)
+tiss <- NormalizeData(tiss, normalization.method = "LogNormalize", scale.factor = 10000)
+tiss <- NormalizeData(tiss)
+tiss <- FindVariableFeatures(tiss, selection.method = "vst", nfeatures = 2000)
+
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(tiss), 10)
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(tiss)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+CombinePlots(plots = list(plot1, plot2))
+```
+
+```{r}
+all.genes <- rownames(tiss)
+tiss <- ScaleData(tiss, features = all.genes)
+tiss <- RunPCA(tiss, features = VariableFeatures(object = tiss))
+print(tiss[["pca"]], dims = 1:5, nfeatures = 5)
+ElbowPlot(tiss)
+```
+
+
+```{r}
+tiss <- FindNeighbors(tiss, dims = 1:50)
+tiss <- FindClusters(tiss, resolution = 0.5)
+# If you haven't installed UMAP, you can do so via reticulate::py_install(packages =
+# 'umap-learn')
+tiss <- RunUMAP(tiss, dims = 1:50)
+DimPlot(tiss, reduction = "umap", label=TRUE)
+```
+```{r}
+#Annotations are based from prior studies (citations in manuscript) and Tabula Muris mouse lung atlas
+tiss <- RenameIdents(tiss, '2'='Proximal Ep.', '1'='Plexus', '5'='Neutrophil', '0'='Matrix fib.', '6'='Arterial', '8'='Mesothelial', '4'='ASM', '3'='Distal Ep.', '7' = 'Pericyte')
+DimPlot(tiss, label = TRUE)
+```
+
+```{r}
+FeaturePlot(tiss, features = c("Fgf7", "Fgf10"), sort.cell = TRUE)
+```
+
+```{r}
+tiss.sub <- subset(tiss, idents = c("Matrix fib.", "ASM", "Neutrophil"))
+VlnPlot(tiss.sub, features = c("Wnt2", "Fgf7", "Fgf10"))
+```
+
+

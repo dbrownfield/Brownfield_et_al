@@ -1,0 +1,85 @@
+```{r}
+library(ggplot2)
+library(Seurat)
+library(dplyr)
+library(Matrix)
+library(gplots)
+library(useful)
+```
+
+```{r}
+# Read in Tabula Muris data either as RDS file
+tiss <- readRDS("C:/R/analysis/MACA/MACA_11182019.rds")
+tiss[["percent.mt"]] <- PercentageFeatureSet(tiss, pattern = "^mt-")
+# Visualize QC metrics as a violin plot
+VlnPlot(tiss, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+```
+
+```{r}
+plot1 <- FeatureScatter(tiss, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(tiss, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+CombinePlots(plots = list(plot1, plot2))
+```
+
+```{r}
+tiss <- subset(tiss, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 5)
+tiss <- NormalizeData(tiss, normalization.method = "LogNormalize", scale.factor = 10000)
+tiss <- NormalizeData(tiss)
+tiss <- FindVariableFeatures(tiss, selection.method = "vst", nfeatures = 2000)
+
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(tiss), 10)
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(tiss)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+CombinePlots(plots = list(plot1, plot2))
+```
+
+```{r}
+all.genes <- rownames(tiss)
+tiss <- ScaleData(tiss, features = all.genes)
+tiss <- RunPCA(tiss, features = VariableFeatures(object = tiss))
+print(tiss[["pca"]], dims = 1:5, nfeatures = 5)
+```
+
+```{r}
+VizDimLoadings(tiss, dims = 1:2, reduction = "pca")
+
+```
+
+```{r}
+DimPlot(tiss, reduction = "pca")
+
+```
+
+```{r}
+ElbowPlot(tiss)
+
+```
+
+```{r}
+tiss <- FindNeighbors(tiss, dims = 1:27)
+tiss <- FindClusters(tiss, algorithm = 2, resolution = 0.3)
+```
+
+```{r}
+# If you haven't installed UMAP, you can do so via reticulate::py_install(packages =
+# 'umap-learn')
+tiss <- RunUMAP(tiss, dims = 1:20)
+#Annotations are based from prior studies (citations in manuscript) and Tabula Muris mouse lung atlas
+tiss <- RenameIdents(tiss,'2'='Myofib.', '1'='Alv.fib.', '15'='Pericyte', '12'='ASM', '5'='AT2', '0'='gCap', '6'='aCap', '8'='Lymph.', '4'='ArtVein', '10'='NA')
+#In order to better visualize the clusters with Fgf7/10 expression, we subsetted a portion of the UMAP by removing immune and ciliated cluseters
+tiss.sub1 <- subset(tiss, idents = c("Myofib.", "ASM", "Lymph.", "Pericyte", "Alv.fib.", "aCap", "gCap", "ArtVein", "AT2"))
+DimPlot(tiss.sub1, label = TRUE)
+```
+
+```{r}
+FeaturePlot(tiss.sub1, features = c("Fgf7", "Fgf10"), sort.cell = TRUE)
+#Again, note that UMAP in the manuscript was subsetted to clarify which clusters have expression
+```
+```{r}
+#A further subsetting was performed to just visualize clusters with Fgf7/10 expression
+tiss.sub2 <- subset(tiss, idents = c("Pericyte", "Alv.fib.", "Myofib."))
+DotPlot(tiss.sub2, features = rev(c("Trpc6", "Wnt2", "Scara5", "Fgf7", "Fgf10")))
+```
