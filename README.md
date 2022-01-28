@@ -1,5 +1,5 @@
 # Brownfield_et_al
-In support of this manuscript, we have provided all the necessary scripts and data for reproducing all scRNAseq we report. Below is a listing of relevant figures and the relevant accession codes.
+In support of this manuscript, we have provided all the necessary scripts and data for reproducing the scRNAseq analysis we report. Below is a listing of relevant figures and the relevant accession codes.
 
 ## Figure 1
 These data were acquired back in 2014 using the Fluidigm C1 chip technology.
