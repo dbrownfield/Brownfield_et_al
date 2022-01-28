@@ -16,10 +16,11 @@ These data were acquired back in 2014 using the Fluidigm C1 chip technology.
 GSE52583
 ### Adult Lung Mesenchymal Cells
 GSE109444
-
 ## Supplementary Figure 1
 ### E18 Distal Lung Epithelial Cells (isoforms)
 GSE52583
-## Supplementary Figure 3
+## Supplementary Figure 2
 ### Tabula Muris
+GSE109774
 ### E16 Mouse Lung Cells
+GSE119228
